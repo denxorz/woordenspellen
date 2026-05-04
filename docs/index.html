@@ -163,9 +163,8 @@ ontwikkeling</textarea>
     </fieldset>
 
     <div class="row">
-      <button type="button" id="play">Afspelen</button>
+      <button type="button" id="play">Begin opnieuw</button>
       <button type="button" id="stop" class="secondary" disabled>Stoppen</button>
-      <button type="button" id="regen" class="secondary">Nieuwe lijst</button>
     </div>
 
     <div class="status" id="status" aria-live="polite">Klaar.</div>
@@ -176,7 +175,6 @@ ontwikkeling</textarea>
         const wordsEl = document.getElementById("words");
         const playBtn = document.getElementById("play");
         const stopBtn = document.getElementById("stop");
-        const regenBtn = document.getElementById("regen");
         const statusEl = document.getElementById("status");
         const wordCountEl = document.getElementById("wordCount");
         const wordCountOut = document.getElementById("wordCountOut");
@@ -447,13 +445,6 @@ ontwikkeling</textarea>
           return list;
         }
 
-        regenBtn.addEventListener("click", () => {
-          stopAll();
-          const count = targetWordCountFromSlider();
-          applyRandomWordListToTextarea(count);
-          setStatus("Nieuwe lijst (" + count + " woorden). Druk op Afspelen.");
-        });
-
         function speakWord(word) {
           return new Promise((resolve, reject) => {
             if (cancelled) {
@@ -501,10 +492,7 @@ ontwikkeling</textarea>
 
         playBtn.addEventListener("click", async () => {
           const target = targetWordCountFromSlider();
-          let words = parseWords(wordsEl.value);
-          if (words.length !== target || words.length === 0) {
-            words = applyRandomWordListToTextarea(target);
-          }
+          const words = applyRandomWordListToTextarea(target);
           const gapSec = selectedSilenceSec();
           const silenceMs = Math.max(1000, gapSec * 1000);
 
@@ -524,9 +512,7 @@ ontwikkeling</textarea>
               }
             }
             if (!cancelled) {
-              setStatus(
-                "Klaar. Nieuwe lijst voor andere woorden, of Afspelen om dezelfde lijst te herhalen."
-              );
+              setStatus("Klaar. Druk op Begin opnieuw voor een nieuwe ronde.");
             }
           } catch (e) {
             if (!cancelled) {
