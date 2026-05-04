@@ -419,13 +419,23 @@ ontwikkeling</textarea>
           return pool.slice(0, n);
         }
 
-        regenBtn.addEventListener("click", () => {
-          stopAll();
+        function targetWordCountFromSlider() {
           const cap = parseInt(wordCountEl.max, 10) || WORD_BANK.length;
           let count = parseInt(wordCountEl.value, 10);
           if (!Number.isFinite(count)) count = 5;
-          count = Math.min(cap, Math.max(3, count));
-          wordsEl.value = randomWordList(count).join("\n");
+          return Math.min(cap, Math.max(3, count));
+        }
+
+        function applyRandomWordListToTextarea(count) {
+          const list = randomWordList(count);
+          wordsEl.value = list.join("\n");
+          return list;
+        }
+
+        regenBtn.addEventListener("click", () => {
+          stopAll();
+          const count = targetWordCountFromSlider();
+          applyRandomWordListToTextarea(count);
           setStatus("Nieuwe lijst (" + count + " woorden). Druk op Afspelen.");
         });
 
@@ -475,10 +485,10 @@ ontwikkeling</textarea>
         }
 
         playBtn.addEventListener("click", async () => {
-          const words = parseWords(wordsEl.value);
-          if (!words.length) {
-            setStatus("Druk op Nieuwe lijst om te beginnen.");
-            return;
+          const target = targetWordCountFromSlider();
+          let words = parseWords(wordsEl.value);
+          if (words.length !== target || words.length === 0) {
+            words = applyRandomWordListToTextarea(target);
           }
           const gapSec = selectedSilenceSec();
           const silenceMs = Math.max(1000, gapSec * 1000);
