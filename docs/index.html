@@ -58,6 +58,33 @@
       .pace-options input {
         margin: 0;
       }
+      fieldset.word-count {
+        margin: 1.25rem 0 0;
+        padding: 0.75rem 1rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+      }
+      fieldset.word-count legend {
+        font-weight: 600;
+        padding: 0 0.35rem;
+      }
+      .word-count-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 0.35rem;
+      }
+      .word-count-row input[type="range"] {
+        flex: 1;
+        min-width: 0;
+      }
+      .word-count-row output {
+        font-weight: 600;
+        min-width: 6.5rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
       .row {
         display: flex;
         gap: 0.75rem;
@@ -114,6 +141,23 @@ ontwikkeling</textarea>
       </div>
     </fieldset>
 
+    <fieldset class="word-count">
+      <legend>Aantal woorden</legend>
+      <div class="word-count-row">
+        <input
+          type="range"
+          id="wordCount"
+          min="3"
+          max="25"
+          value="4"
+          step="1"
+          aria-valuemin="3"
+          aria-valuemax="25"
+        />
+        <output id="wordCountOut" for="wordCount">4 woorden</output>
+      </div>
+    </fieldset>
+
     <div class="row">
       <button type="button" id="play">Afspelen</button>
       <button type="button" id="stop" class="secondary" disabled>Stoppen</button>
@@ -130,6 +174,8 @@ ontwikkeling</textarea>
         const stopBtn = document.getElementById("stop");
         const regenBtn = document.getElementById("regen");
         const statusEl = document.getElementById("status");
+        const wordCountEl = document.getElementById("wordCount");
+        const wordCountOut = document.getElementById("wordCountOut");
 
         const WORD_BANK = [
           "appel",
@@ -297,6 +343,32 @@ ontwikkeling</textarea>
           "cedille",
         ];
 
+        function syncWordCountSliderMax() {
+          const cap = Math.min(25, WORD_BANK.length);
+          wordCountEl.max = String(cap);
+          wordCountEl.setAttribute("aria-valuemax", String(cap));
+          let v = parseInt(wordCountEl.value, 10);
+          if (!Number.isFinite(v)) v = 4;
+          v = Math.min(cap, Math.max(3, v));
+          wordCountEl.value = String(v);
+        }
+
+        function syncWordCountLabel() {
+          wordCountOut.textContent = wordCountEl.value + " woorden";
+        }
+
+        syncWordCountSliderMax();
+        (function syncSliderFromTextarea() {
+          const n = parseWords(wordsEl.value).length;
+          if (n >= 3) {
+            const cap = parseInt(wordCountEl.max, 10) || 25;
+            wordCountEl.value = String(Math.min(cap, Math.max(3, n)));
+          }
+          syncWordCountLabel();
+        })();
+
+        wordCountEl.addEventListener("input", syncWordCountLabel);
+
         let cancelled = false;
         let silenceTimer = null;
 
@@ -349,8 +421,10 @@ ontwikkeling</textarea>
 
         regenBtn.addEventListener("click", () => {
           stopAll();
-          const current = parseWords(wordsEl.value).length;
-          const count = current > 0 ? current : 5;
+          const cap = parseInt(wordCountEl.max, 10) || WORD_BANK.length;
+          let count = parseInt(wordCountEl.value, 10);
+          if (!Number.isFinite(count)) count = 5;
+          count = Math.min(cap, Math.max(3, count));
           wordsEl.value = randomWordList(count).join("\n");
           setStatus("Nieuwe lijst (" + count + " woorden). Druk op Afspelen.");
         });
