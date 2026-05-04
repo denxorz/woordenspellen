@@ -1,5 +1,7 @@
 # Woorden spellen — agent notes
 
+License: MIT (`LICENSE`). Copyright line may be updated by the maintainer.
+
 ## What this repo is
 
 Static Dutch spelling-practice page: **Web Speech API** (`speechSynthesis`, `nl-NL`) reads words from a hidden list; the user spells during timed silence. No build step, no backend.
