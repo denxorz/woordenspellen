@@ -14,7 +14,7 @@ Static Dutch spelling-practice page: **Web Speech API** (`speechSynthesis`, `nl-
 ## Behaviour (do not break without intent)
 
 - Word list is in a visually hidden `#words` textarea (no on-screen cheating). **Nieuwe lijst** fills it from `WORD_BANK` (shuffle, no duplicates per round). The **Aantal woorden** range (3–min(25, bank size)) sets the list length. **Afspelen** refreshes the list when its length differs from the slider or the list is empty, then replays that list until the slider count changes or **Nieuwe lijst** is pressed. On first load the slider syncs from the default textarea (4 words).
-- Pause length: radios **5 / 7 / 9** seconds (`name="silence"`).
+- Pause length: **`#pauseSec`** range slider (default **3–15** seconds, step 1; default value **7**).
 - Status text must **not** reveal the current word (only index / counts).
 - `u.rate` is fixed in script (currently `0.95`).
 

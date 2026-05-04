@@ -42,21 +42,21 @@
         font-weight: 600;
         padding: 0 0.35rem;
       }
-      .pace-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem 1.25rem;
-        margin-top: 0.35rem;
-      }
-      .pace-options label {
+      .pace-row {
         display: flex;
         align-items: center;
-        gap: 0.4rem;
-        font-weight: 500;
-        cursor: pointer;
+        gap: 1rem;
+        margin-top: 0.35rem;
       }
-      .pace-options input {
-        margin: 0;
+      .pace-row input[type="range"] {
+        flex: 1;
+        min-width: 0;
+      }
+      .pace-row output {
+        font-weight: 600;
+        min-width: 7.5rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
       }
       fieldset.word-count {
         margin: 1.25rem 0 0;
@@ -130,14 +130,18 @@ ontwikkeling</textarea>
 
     <fieldset class="pace">
       <legend>Pauze tussen woorden</legend>
-      <div class="pace-options">
-        <label
-          ><input type="radio" name="silence" value="9" /> 9 seconden </label
-        >
-        <label
-          ><input type="radio" name="silence" value="7" checked /> 7 seconden </label
-        >
-        <label><input type="radio" name="silence" value="5" /> 5 seconden </label>
+      <div class="pace-row">
+        <input
+          type="range"
+          id="pauseSec"
+          min="3"
+          max="15"
+          value="7"
+          step="1"
+          aria-valuemin="3"
+          aria-valuemax="15"
+        />
+        <output id="pauseSecOut" for="pauseSec">7 seconden</output>
       </div>
     </fieldset>
 
@@ -176,6 +180,8 @@ ontwikkeling</textarea>
         const statusEl = document.getElementById("status");
         const wordCountEl = document.getElementById("wordCount");
         const wordCountOut = document.getElementById("wordCountOut");
+        const pauseSecEl = document.getElementById("pauseSec");
+        const pauseSecOut = document.getElementById("pauseSecOut");
 
         const WORD_BANK = [
           "appel",
@@ -369,6 +375,13 @@ ontwikkeling</textarea>
 
         wordCountEl.addEventListener("input", syncWordCountLabel);
 
+        function syncPauseLabel() {
+          pauseSecOut.textContent = pauseSecEl.value + " seconden";
+        }
+
+        pauseSecEl.addEventListener("input", syncPauseLabel);
+        syncPauseLabel();
+
         let cancelled = false;
         let silenceTimer = null;
 
@@ -380,9 +393,11 @@ ontwikkeling</textarea>
         }
 
         function selectedSilenceSec() {
-          const el = document.querySelector('input[name="silence"]:checked');
-          const v = el ? parseFloat(el.value) : 7;
-          return Number.isFinite(v) ? v : 7;
+          const v = parseFloat(pauseSecEl.value);
+          const min = parseFloat(pauseSecEl.min) || 3;
+          const max = parseFloat(pauseSecEl.max) || 15;
+          if (!Number.isFinite(v)) return 7;
+          return Math.min(max, Math.max(min, v));
         }
 
         function setRunning(running) {
