@@ -8,8 +8,8 @@ Static Dutch spelling-practice page: **Web Speech API** (`speechSynthesis`, `nl-
 
 ## Where the app lives
 
-- **Canonical file for GitHub Pages:** `docs/index.html`
-- Edit that file (or keep a local copy in sync). The published site root is the `docs/` folder when Pages is set to **Deploy from branch** with the **`/docs`** folder.
+- **Canonical app file:** `index.html` at the repository root (GitHub Pages: deploy from branch **`/`** (root), not `/docs`).
+- **`.nojekyll`** at repo root disables Jekyll so the static HTML is served as-is.
 
 ## Behaviour (do not break without intent)
 
