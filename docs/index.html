@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Woorden spellen</title>
+    <style>
+      :root {
+        font-family: system-ui, Segoe UI, Roboto, sans-serif;
+        line-height: 1.45;
+        color: #1a1a1a;
+        background: #f4f4f5;
+      }
+      body {
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      .hidden-words {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      fieldset.pace {
+        margin: 1.25rem 0 0;
+        padding: 0.75rem 1rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+      }
+      fieldset.pace legend {
+        font-weight: 600;
+        padding: 0 0.35rem;
+      }
+      .pace-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        margin-top: 0.35rem;
+      }
+      .pace-options label {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .pace-options input {
+        margin: 0;
+      }
+      .row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 1.25rem;
+      }
+      button {
+        font: inherit;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: 1px solid #333;
+        background: #1a1a1a;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      button.secondary {
+        background: #fff;
+        color: #1a1a1a;
+      }
+      .status {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        min-height: 2.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Woorden spellen</h1>
+    <p>Elk woord wordt voorgelezen, daarna stilte om te spellen.</p>
+
+    <textarea id="words" class="hidden-words" spellcheck="false" aria-hidden="true" tabindex="-1">appel
+bibliotheek
+schildpad
+ontwikkeling</textarea>
+
+    <fieldset class="pace">
+      <legend>Pauze tussen woorden</legend>
+      <div class="pace-options">
+        <label
+          ><input type="radio" name="silence" value="9" /> 9 seconden </label
+        >
+        <label
+          ><input type="radio" name="silence" value="7" checked /> 7 seconden </label
+        >
+        <label><input type="radio" name="silence" value="5" /> 5 seconden </label>
+      </div>
+    </fieldset>
+
+    <div class="row">
+      <button type="button" id="play">Afspelen</button>
+      <button type="button" id="stop" class="secondary" disabled>Stoppen</button>
+      <button type="button" id="regen" class="secondary">Nieuwe lijst</button>
+    </div>
+
+    <div class="status" id="status" aria-live="polite">Klaar.</div>
+
+    <script>
+      (function () {
+        const lang = "nl-NL";
+        const wordsEl = document.getElementById("words");
+        const playBtn = document.getElementById("play");
+        const stopBtn = document.getElementById("stop");
+        const regenBtn = document.getElementById("regen");
+        const statusEl = document.getElementById("status");
+
+        const WORD_BANK = [
+          "appel",
+          "bibliotheek",
+          "schildpad",
+          "ontwikkeling",
+          "regenboog",
+          "vliegveld",
+          "tandarts",
+          "krokodil",
+          "telefoon",
+          "paraplu",
+          "aardappel",
+          "fietsbel",
+          "schoorsteen",
+          "ijsbeer",
+          "vlinder",
+          "broccoli",
+          "octopus",
+          "piano",
+          "dinosaurus",
+          "kangoeroe",
+          "limonade",
+          "chocolade",
+          "spaghetti",
+          "yoghurt",
+          "giraffe",
+          "olifant",
+          "narcis",
+          "tulp",
+          "anjer",
+          "hyacint",
+          "blauwdruk",
+          "handtekening",
+          "verjaardag",
+          "sneeuwpop",
+          "schaatsbaan",
+          "springplank",
+          "touwbrug",
+          "klimtoren",
+          "waterpomp",
+          "brandweer",
+          "ziekenhuis",
+          "apotheek",
+          "bibliothecaris",
+          "architect",
+          "ingenieur",
+          "wetenschap",
+          "experiment",
+          "microscoop",
+          "telescoop",
+          "satelliet",
+          "astronaut",
+          "melkweg",
+          "sterrenkunde",
+          "vulkaan",
+          "aardbeving",
+          "orkaan",
+          "bliksem",
+          "regenachtig",
+          "windmolen",
+          "poldermodel",
+          "grachtenpand",
+          "stadhuis",
+          "gemeenteraad",
+          "verkiezing",
+          "democratie",
+          "grondwet",
+          "vrijheid",
+          "vriendschap",
+          "familielid",
+          "grootouder",
+          "achterkleinzoon",
+          "schoonouders",
+          "verloving",
+          "bruiloft",
+          "taartpunt",
+          "slagroom",
+          "speculaas",
+          "stroopwafel",
+          "pannenkoek",
+          "hagelslag",
+          "dropveter",
+          "pepermunt",
+          "kaneelstok",
+          "worteltaart",
+          "spinazie",
+          "courgette",
+          "aubergine",
+          "peterselie",
+          "dragon",
+          "komijn",
+          "koriander",
+          "kardemom",
+          "nootmuskaat",
+          "vanillestok",
+          "karamel",
+          "biscuitje",
+          "koekenpan",
+          "ovenwant",
+          "ijskast",
+          "vriezer",
+          "stofzuiger",
+          "wasmachine",
+          "droogrek",
+          "strijkplank",
+          "naaigaren",
+          "knoopsgat",
+          "ritssluiting",
+          "rugzak",
+          "sleutelbos",
+          "parkeerplaats",
+          "rotonde",
+          "snelweg",
+          "voetganger",
+          "zebrapad",
+          "verkeerslicht",
+          "fietspad",
+          "elektriciteit",
+          "batterij",
+          "oplader",
+          "screenshot",
+          "wachtwoord",
+          "toetsenbord",
+          "muismat",
+          "printer",
+          "document",
+          "afdrukken",
+          "bureaula",
+          "paperclip",
+          "potlood",
+          "gummetje",
+          "liniaal",
+          "passer",
+          "wiskunde",
+          "driehoek",
+          "vierkant",
+          "cirkeldiagram",
+          "statistiek",
+          "kansrekening",
+          "alfabet",
+          "medeklinker",
+          "tweeklank",
+          "samenvoeging",
+          "werkwoord",
+          "bijvoeglijk",
+          "woordenschat",
+          "synoniem",
+          "antoniem",
+          "vertaling",
+          "uitspraak",
+          "zinsdeel",
+          "hoofdletter",
+          "komma",
+          "puntkomma",
+          "vraagteken",
+          "uitroepteken",
+          "aanhalingsteken",
+          "streepje",
+          "koppelteken",
+          "schuinestreep",
+          "haakje",
+          "accentteken",
+          "trema",
+          "cedille",
+        ];
+
+        let cancelled = false;
+        let silenceTimer = null;
+
+        function parseWords(text) {
+          return text
+            .split(/[\n,]+/)
+            .map((w) => w.trim())
+            .filter(Boolean);
+        }
+
+        function selectedSilenceSec() {
+          const el = document.querySelector('input[name="silence"]:checked');
+          const v = el ? parseFloat(el.value) : 7;
+          return Number.isFinite(v) ? v : 7;
+        }
+
+        function setRunning(running) {
+          playBtn.disabled = running;
+          stopBtn.disabled = !running;
+        }
+
+        function setStatus(msg) {
+          statusEl.textContent = msg;
+        }
+
+        function stopAll() {
+          cancelled = true;
+          if (silenceTimer) {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+          }
+          speechSynthesis.cancel();
+          setRunning(false);
+          setStatus("Gestopt.");
+        }
+
+        stopBtn.addEventListener("click", stopAll);
+
+        function randomWordList(count) {
+          const n = Math.min(WORD_BANK.length, Math.max(3, count));
+          const pool = WORD_BANK.slice();
+          for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const t = pool[i];
+            pool[i] = pool[j];
+            pool[j] = t;
+          }
+          return pool.slice(0, n);
+        }
+
+        regenBtn.addEventListener("click", () => {
+          stopAll();
+          const current = parseWords(wordsEl.value).length;
+          const count = current > 0 ? current : 5;
+          wordsEl.value = randomWordList(count).join("\n");
+          setStatus("Nieuwe lijst (" + count + " woorden). Druk op Afspelen.");
+        });
+
+        function speakWord(word) {
+          return new Promise((resolve, reject) => {
+            if (cancelled) {
+              resolve();
+              return;
+            }
+            const u = new SpeechSynthesisUtterance(word);
+            u.lang = lang;
+            u.rate = 0.95;
+            u.onend = () => resolve();
+            u.onerror = () =>
+              reject(new Error(u.error ? u.error.message : "speech error"));
+            speechSynthesis.speak(u);
+          });
+        }
+
+        function waitSilenceMs(ms) {
+          return new Promise((resolve) => {
+            if (cancelled) {
+              resolve();
+              return;
+            }
+            let left = Math.ceil(ms / 1000);
+            setStatus("Stilte — spellen… (" + left + " s)");
+            const tick = setInterval(() => {
+              if (cancelled) {
+                clearInterval(tick);
+                resolve();
+                return;
+              }
+              left -= 1;
+              if (left <= 0) {
+                clearInterval(tick);
+                resolve();
+              } else {
+                setStatus("Stilte — spellen… (" + left + " s)");
+              }
+            }, 1000);
+            silenceTimer = setTimeout(() => {
+              clearInterval(tick);
+              resolve();
+            }, ms);
+          });
+        }
+
+        playBtn.addEventListener("click", async () => {
+          const words = parseWords(wordsEl.value);
+          if (!words.length) {
+            setStatus("Druk op Nieuwe lijst om te beginnen.");
+            return;
+          }
+          const gapSec = selectedSilenceSec();
+          const silenceMs = Math.max(1000, gapSec * 1000);
+
+          cancelled = false;
+          setRunning(true);
+          setStatus("Bezig…");
+
+          try {
+            for (let i = 0; i < words.length; i++) {
+              if (cancelled) break;
+              const w = words[i];
+              setStatus("Luister… woord " + (i + 1) + " van " + words.length + ".");
+              await speakWord(w);
+              if (cancelled) break;
+              if (i < words.length - 1) {
+                await waitSilenceMs(silenceMs);
+              }
+            }
+            if (!cancelled) {
+              setStatus(
+                "Klaar. Nieuwe lijst voor andere woorden, of Afspelen om dezelfde lijst te herhalen."
+              );
+            }
+          } catch (e) {
+            if (!cancelled) {
+              setStatus("Fout: " + (e && e.message ? e.message : String(e)));
+            }
+          } finally {
+            silenceTimer = null;
+            setRunning(false);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
