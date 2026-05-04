@@ -134,12 +134,12 @@ ontwikkeling</textarea>
         <input
           type="range"
           id="pauseSec"
-          min="3"
-          max="15"
+          min="4"
+          max="10"
           value="7"
           step="1"
-          aria-valuemin="3"
-          aria-valuemax="15"
+          aria-valuemin="4"
+          aria-valuemax="10"
         />
         <output id="pauseSecOut" for="pauseSec">7 seconden</output>
       </div>
@@ -152,11 +152,11 @@ ontwikkeling</textarea>
           type="range"
           id="wordCount"
           min="3"
-          max="25"
+          max="10"
           value="4"
           step="1"
           aria-valuemin="3"
-          aria-valuemax="25"
+          aria-valuemax="10"
         />
         <output id="wordCountOut" for="wordCount">4 woorden</output>
       </div>
@@ -348,7 +348,7 @@ ontwikkeling</textarea>
         ];
 
         function syncWordCountSliderMax() {
-          const cap = Math.min(25, WORD_BANK.length);
+          const cap = Math.min(10, WORD_BANK.length);
           wordCountEl.max = String(cap);
           wordCountEl.setAttribute("aria-valuemax", String(cap));
           let v = parseInt(wordCountEl.value, 10);
@@ -365,7 +365,7 @@ ontwikkeling</textarea>
         (function syncSliderFromTextarea() {
           const n = parseWords(wordsEl.value).length;
           if (n >= 3) {
-            const cap = parseInt(wordCountEl.max, 10) || 25;
+            const cap = parseInt(wordCountEl.max, 10) || 10;
             wordCountEl.value = String(Math.min(cap, Math.max(3, n)));
           }
           syncWordCountLabel();
@@ -392,8 +392,8 @@ ontwikkeling</textarea>
 
         function selectedSilenceSec() {
           const v = parseFloat(pauseSecEl.value);
-          const min = parseFloat(pauseSecEl.min) || 3;
-          const max = parseFloat(pauseSecEl.max) || 15;
+          const min = parseFloat(pauseSecEl.min) || 4;
+          const max = parseFloat(pauseSecEl.max) || 10;
           if (!Number.isFinite(v)) return 7;
           return Math.min(max, Math.max(min, v));
         }
