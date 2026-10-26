@@ -137,7 +137,7 @@ schildpad
 ontwikkeling</textarea>
 
     <fieldset class="pace">
-      <legend>Pauze tussen woorden</legend>
+      <legend id="pauseLegend">Pauze tussen woorden</legend>
       <div class="pace-row">
         <input
           type="range"
@@ -146,6 +146,7 @@ ontwikkeling</textarea>
           max="10"
           value="7"
           step="1"
+          aria-labelledby="pauseLegend"
           aria-valuemin="4"
           aria-valuemax="10"
         />
@@ -154,7 +155,7 @@ ontwikkeling</textarea>
     </fieldset>
 
     <fieldset class="word-count">
-      <legend>Aantal woorden</legend>
+      <legend id="wordCountLegend">Aantal woorden</legend>
       <div class="word-count-row">
         <input
           type="range"
@@ -163,6 +164,7 @@ ontwikkeling</textarea>
           max="10"
           value="4"
           step="1"
+          aria-labelledby="wordCountLegend"
           aria-valuemin="3"
           aria-valuemax="10"
         />
@@ -175,7 +177,9 @@ ontwikkeling</textarea>
       <button type="button" id="stop" class="secondary" disabled>Stoppen</button>
     </div>
 
-    <div class="status" id="status" aria-live="polite">Klaar.</div>
+    <div class="status">
+      <span id="status" aria-live="polite" aria-atomic="true">Klaar.</span><span id="statusClock" aria-hidden="true"></span>
+    </div>
 
     <footer>Door <a href="https://github.com/denxorz/woordenspellen">denxorz</a></footer>
 
@@ -186,6 +190,7 @@ ontwikkeling</textarea>
         const playBtn = document.getElementById("play");
         const stopBtn = document.getElementById("stop");
         const statusEl = document.getElementById("status");
+        const statusClock = document.getElementById("statusClock");
         const wordCountEl = document.getElementById("wordCount");
         const wordCountOut = document.getElementById("wordCountOut");
         const pauseSecEl = document.getElementById("pauseSec");
@@ -483,7 +488,7 @@ ontwikkeling</textarea>
           "naaimachine",
           "breinaald",
           "haakpen",
-          "wolbal",
+          "wolbol",
           "speldendoos",
           "verfkwast",
           "verfdoos",
@@ -501,8 +506,8 @@ ontwikkeling</textarea>
           "lichtinstallatie",
           "podiumtrap",
           "repetitieruimte",
-          "dirigentstok",
-          "vioolstrijker",
+          "dirigeerstok",
+          "violist",
           "trompettist",
           "pianoles",
           "muziekles",
@@ -715,8 +720,11 @@ ontwikkeling</textarea>
         pauseSecEl.addEventListener("input", syncPauseLabel);
         syncPauseLabel();
 
-        let cancelled = false;
+        let roundId = 0;
+        let silenceToken = null;
         let silenceTimer = null;
+        let silenceTick = null;
+        let finishSilence = null;
 
         function parseWords(text) {
           return text
@@ -740,14 +748,33 @@ ontwikkeling</textarea>
 
         function setStatus(msg) {
           statusEl.textContent = msg;
+          statusClock.textContent = "";
         }
 
-        function stopAll() {
-          cancelled = true;
+        function setSilenceStatus(left) {
+          const msg = "Stilte — spellen…";
+          if (statusEl.textContent !== msg) statusEl.textContent = msg;
+          statusClock.textContent = " (" + left + " s)";
+        }
+
+        function endSilence() {
+          silenceToken = null;
           if (silenceTimer) {
             clearTimeout(silenceTimer);
             silenceTimer = null;
           }
+          if (silenceTick) {
+            clearInterval(silenceTick);
+            silenceTick = null;
+          }
+          const finish = finishSilence;
+          finishSilence = null;
+          if (finish) finish();
+        }
+
+        function stopAll() {
+          roundId += 1;
+          endSilence();
           speechSynthesis.cancel();
           setRunning(false);
           setStatus("Gestopt.");
@@ -780,9 +807,26 @@ ontwikkeling</textarea>
           return list;
         }
 
-        function speakWord(word) {
+        function speechFailureText(reason) {
+          switch (reason) {
+            case "not-allowed":
+              return "Fout: spraak is geblokkeerd door de browser.";
+            case "language-unavailable":
+            case "voice-unavailable":
+              return "Fout: geen Nederlandse stem beschikbaar.";
+            case "network":
+              return "Fout: geen netwerk voor spraak.";
+            case "audio-busy":
+            case "audio-hardware":
+              return "Fout: audio is niet beschikbaar.";
+            default:
+              return "Fout: spraak werkt niet.";
+          }
+        }
+
+        function speakWord(word, round) {
           return new Promise((resolve, reject) => {
-            if (cancelled) {
+            if (round !== roundId) {
               resolve();
               return;
             }
@@ -790,72 +834,85 @@ ontwikkeling</textarea>
             u.lang = lang;
             u.rate = 0.95;
             u.onend = () => resolve();
-            u.onerror = () =>
-              reject(new Error(u.error ? u.error.message : "speech error"));
+            u.onerror = (event) => {
+              if (round !== roundId) {
+                resolve();
+                return;
+              }
+              const reason = event && event.error ? String(event.error) : "";
+              reject(new Error(reason));
+            };
             speechSynthesis.speak(u);
           });
         }
 
-        function waitSilenceMs(ms) {
+        function waitSilenceMs(ms, round) {
           return new Promise((resolve) => {
-            if (cancelled) {
+            if (round !== roundId) {
               resolve();
               return;
             }
+            const token = {};
+            silenceToken = token;
             let left = Math.ceil(ms / 1000);
-            setStatus("Stilte — spellen… (" + left + " s)");
-            const tick = setInterval(() => {
-              if (cancelled) {
-                clearInterval(tick);
-                resolve();
+            setSilenceStatus(left);
+            finishSilence = resolve;
+            silenceTick = setInterval(() => {
+              if (silenceToken !== token) return;
+              if (round !== roundId) {
+                endSilence();
                 return;
               }
               left -= 1;
-              if (left <= 0) {
-                clearInterval(tick);
-                resolve();
-              } else {
-                setStatus("Stilte — spellen… (" + left + " s)");
-              }
+              if (silenceToken !== token) return;
+              if (left <= 0) endSilence();
+              else setSilenceStatus(left);
             }, 1000);
             silenceTimer = setTimeout(() => {
-              clearInterval(tick);
-              resolve();
+              if (silenceToken === token) endSilence();
             }, ms);
           });
         }
 
         playBtn.addEventListener("click", async () => {
+          const round = ++roundId;
+          endSilence();
+          const interrupted = speechSynthesis.speaking || speechSynthesis.pending;
+          if (interrupted) speechSynthesis.cancel();
+          setRunning(true);
+
           const target = targetWordCountFromSlider();
           const words = applyRandomWordListToTextarea(target);
-          const gapSec = selectedSilenceSec();
-          const silenceMs = Math.max(1000, gapSec * 1000);
+          const silenceMs = Math.max(1000, selectedSilenceSec() * 1000);
 
-          cancelled = false;
-          setRunning(true);
+          if (interrupted) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            if (round !== roundId) return;
+          }
+
           setStatus("Bezig…");
 
           try {
             for (let i = 0; i < words.length; i++) {
-              if (cancelled) break;
+              if (round !== roundId) return;
               const w = words[i];
               setStatus("Luister… woord " + (i + 1) + " van " + words.length + ".");
-              await speakWord(w);
-              if (cancelled) break;
-              if (i < words.length - 1) {
-                await waitSilenceMs(silenceMs);
-              }
+              await speakWord(w, round);
+              if (round !== roundId) return;
+              if (i < words.length - 1) await waitSilenceMs(silenceMs, round);
             }
-            if (!cancelled) {
+            if (round === roundId) {
               setStatus("Klaar. Druk op Begin opnieuw voor een nieuwe ronde.");
             }
           } catch (e) {
-            if (!cancelled) {
-              setStatus("Fout: " + (e && e.message ? e.message : String(e)));
+            if (round === roundId) {
+              setStatus(speechFailureText(e && e.message));
             }
           } finally {
-            silenceTimer = null;
-            setRunning(false);
+            if (round === roundId) {
+              endSilence();
+              setRunning(false);
+            }
           }
         });
       })();
